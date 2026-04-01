@@ -24,10 +24,10 @@ import {
   walletConnectWallet,
   okxWallet,
 } from "@rainbow-me/rainbowkit/wallets";
-import { metaMask } from "wagmi/connectors";
+
 const config = getDefaultConfig({
   appName: "AI smart yield",
-  projectId: process.env.PROJECTID,
+  projectId: process.env.NEXT_PUBLIC_PROJECT_ID,
   chains: [sepolia],
   transports: {
     [sepolia.id]: http("https://ethereum-sepolia-rpc.publicnode.com"),
