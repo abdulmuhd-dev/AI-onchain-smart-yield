@@ -1,101 +1,271 @@
-import Image from "next/image";
+"use client";
+
+import { WagmiProvider } from "wagmi";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  RainbowKitProvider,
+  ConnectButton,
+  getDefaultConfig,
+} from "@rainbow-me/rainbowkit";
+import { http } from "viem";
+import { sepolia } from "viem/chains";
+import {
+  useAccount,
+  useReadContract,
+  useWriteContract,
+  useBalance,
+} from "wagmi";
+import { Address } from "viem";
+import "@rainbow-me/rainbowkit/styles.css";
+import { useState } from "react";
+import {
+  metaMaskWallet,
+  rabbyWallet,
+  walletConnectWallet,
+  okxWallet,
+} from "@rainbow-me/rainbowkit/wallets";
+import { metaMask } from "wagmi/connectors";
+const config = getDefaultConfig({
+  appName: "AI smart yield",
+  projectId: process.env.PROJECTID,
+  chains: [sepolia],
+  transports: {
+    [sepolia.id]: http("https://ethereum-sepolia-rpc.publicnode.com"),
+  },
+  wallets: [
+    {
+      groupName: "Recommended",
+      wallets: [metaMaskWallet, rabbyWallet, walletConnectWallet, okxWallet],
+    },
+  ],
+});
+
+const queryClient = new QueryClient();
+
+const CONTRACT_ADDRESS: Address = "0xa05074b5C753fa8eF358640Fe30d6c37E1257D8A";
+
+const ABI = [
+  {
+    inputs: [],
+    name: "getStaked",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "calculateRewards",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "amount", type: "uint256" }],
+    name: "stake",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "amount", type: "uint256" }],
+    name: "unstake",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "claimRewards",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "owner", type: "address" }],
+    name: "balanceOf",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+] as const;
 
 export default function Home() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <RainbowKitProvider>
+          <div
+            style={{
+              padding: "40px",
+              maxWidth: "600px",
+              margin: "0 auto",
+              fontFamily: "system-ui",
+            }}
+          >
+            <h1 style={{ textAlign: "center", fontSize: "28px" }}>
+              🌾 AI Smart Yield Optimizer
+            </h1>
+            <p
+              style={{
+                textAlign: "center",
+                color: "#666",
+                marginBottom: "30px",
+              }}
+            >
+              Stake YIELD • Earn Rewards
+            </p>
+            <ConnectButton />
+            <StakingUI />
+          </div>
+        </RainbowKitProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
+  );
+}
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+function StakingUI() {
+  const { address } = useAccount();
+  const { writeContract, isPending } = useWriteContract();
+  const [amount, setAmount] = useState("");
+
+  const { data: staked } = useReadContract({
+    abi: ABI,
+    address: CONTRACT_ADDRESS,
+    functionName: "getStaked",
+    args: address ? [address] : undefined,
+  });
+
+  const { data: pendingRewards } = useReadContract({
+    abi: ABI,
+    address: CONTRACT_ADDRESS,
+    functionName: "calculateRewards",
+    args: address ? [address] : undefined,
+  });
+
+  const { data: tokenBalance } = useBalance({
+    address,
+    token: CONTRACT_ADDRESS,
+  });
+
+  if (!address) {
+    return (
+      <p style={{ textAlign: "center", marginTop: "60px", fontSize: "18px" }}>
+        Connect your wallet to start staking
+      </p>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        marginTop: "40px",
+        background: "#1a1a1a",
+        padding: "30px",
+        borderRadius: "16px",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginBottom: "20px",
+        }}
+      >
+        <div>
+          <p style={{ color: "#888" }}>Balance</p>
+          <p style={{ fontSize: "24px", fontWeight: "bold" }}>
+            {tokenBalance?.formatted || "0"} YIELD
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+        <div>
+          <p style={{ color: "#888" }}>Staked</p>
+          <p style={{ fontSize: "24px", fontWeight: "bold" }}>
+            {staked ? (Number(staked) / 1e18).toFixed(4) : "0"} YIELD
+          </p>
+        </div>
+        <div>
+          <p style={{ color: "#888" }}>Rewards</p>
+          <p style={{ fontSize: "24px", fontWeight: "bold", color: "#22c55e" }}>
+            {pendingRewards ? (Number(pendingRewards) / 1e18).toFixed(4) : "0"}{" "}
+            YIELD
+          </p>
+        </div>
+      </div>
+
+      <input
+        type="text"
+        placeholder="Amount"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value)}
+        style={{
+          width: "100%",
+          padding: "14px",
+          borderRadius: "8px",
+          marginBottom: "20px",
+          fontSize: "16px",
+        }}
+      />
+
+      <div style={{ display: "flex", gap: "12px" }}>
+        <button
+          onClick={() =>
+            writeContract({
+              abi: ABI,
+              address: CONTRACT_ADDRESS,
+              functionName: "stake",
+              args: [BigInt(Number(amount) * 1e18)],
+            })
+          }
+          disabled={isPending}
+          style={{
+            flex: 1,
+            padding: "14px",
+            fontSize: "16px",
+            borderRadius: "8px",
+          }}
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          Stake
+        </button>
+
+        <button
+          onClick={() =>
+            writeContract({
+              abi: ABI,
+              address: CONTRACT_ADDRESS,
+              functionName: "unstake",
+              args: [BigInt(Number(amount) * 1e18)],
+            })
+          }
+          disabled={isPending}
+          style={{
+            flex: 1,
+            padding: "14px",
+            fontSize: "16px",
+            borderRadius: "8px",
+          }}
         >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          Unstake
+        </button>
+
+        <button
+          onClick={() =>
+            writeContract({
+              abi: ABI,
+              address: CONTRACT_ADDRESS,
+              functionName: "claimRewards",
+            })
+          }
+          disabled={isPending}
+          style={{
+            flex: 1,
+            padding: "14px",
+            fontSize: "16px",
+            borderRadius: "8px",
+          }}
         >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          Claim Rewards
+        </button>
+      </div>
     </div>
   );
 }
