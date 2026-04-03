@@ -24,13 +24,16 @@ import {
   walletConnectWallet,
   okxWallet,
 } from "@rainbow-me/rainbowkit/wallets";
+import { yieldABI } from "@/lib/abi/yieldABI";
 
 const config = getDefaultConfig({
   appName: "AI smart yield",
   projectId: process.env.NEXT_PUBLIC_PROJECT_ID,
   chains: [sepolia],
   transports: {
-    [sepolia.id]: http("https://ethereum-sepolia-rpc.publicnode.com"),
+    [sepolia.id]: http(
+      "https://sepolia.infura.io/v3/cae6eccc47544f2889b6e7f418521a31"
+    ),
   },
   wallets: [
     {
@@ -44,50 +47,7 @@ const queryClient = new QueryClient();
 
 const CONTRACT_ADDRESS: Address = "0xa05074b5C753fa8eF358640Fe30d6c37E1257D8A";
 
-const ABI = [
-  {
-    inputs: [],
-    name: "getStaked",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "calculateRewards",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "uint256", name: "amount", type: "uint256" }],
-    name: "stake",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "uint256", name: "amount", type: "uint256" }],
-    name: "unstake",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "claimRewards",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "address", name: "owner", type: "address" }],
-    name: "balanceOf",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-] as const;
+const ABI = yieldABI;
 
 export default function Home() {
   return (
@@ -142,9 +102,11 @@ function StakingUI() {
     args: address ? [address] : undefined,
   });
 
-  const { data: tokenBalance } = useBalance({
-    address,
-    token: CONTRACT_ADDRESS,
+  const { data: tokenBalance } = useReadContract({
+    abi: ABI,
+    address: CONTRACT_ADDRESS,
+    functionName: "balanceOf",
+    args: address ? [address] : undefined,
   });
 
   if (!address) {
@@ -174,7 +136,7 @@ function StakingUI() {
         <div>
           <p style={{ color: "#888" }}>Balance</p>
           <p style={{ fontSize: "24px", fontWeight: "bold" }}>
-            {tokenBalance?.formatted || "0"} YIELD
+            {(Number(tokenBalance) / 1e18).toFixed(4) || "0"} YIELD
           </p>
         </div>
         <div>
@@ -203,6 +165,7 @@ function StakingUI() {
           borderRadius: "8px",
           marginBottom: "20px",
           fontSize: "16px",
+          color: "black",
         }}
       />
 
