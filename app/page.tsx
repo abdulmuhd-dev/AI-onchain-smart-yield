@@ -85,7 +85,7 @@ export default function Home() {
 
 function StakingUI() {
   const { address } = useAccount();
-  const { writeContract, isPending } = useWriteContract();
+  const { writeContractAsync, isPending } = useWriteContract();
   const [amount, setAmount] = useState("");
 
   const { data: staked } = useReadContract({
@@ -108,6 +108,32 @@ function StakingUI() {
     functionName: "balanceOf",
     args: address ? [address] : undefined,
   });
+
+  const handleStaking = async (functionName: string) => {
+    const amt = BigInt(Number(amount) * 1e18);
+    if (functionName !== "unstake") {
+      await writeContractAsync({
+        abi: ABI,
+        address: CONTRACT_ADDRESS,
+        functionName: "approve",
+        args: [CONTRACT_ADDRESS, amt],
+      });
+    }
+    const hash = await writeContractAsync({
+      abi: ABI,
+      address: CONTRACT_ADDRESS,
+      functionName,
+      args: [amt],
+    });
+  };
+
+  const handleClaimRewards = async () => {
+    const hash = await writeContractAsync({
+      abi: ABI,
+      address: CONTRACT_ADDRESS,
+      functionName: "claimRewards",
+    });
+  };
 
   if (!address) {
     return (
@@ -171,14 +197,7 @@ function StakingUI() {
 
       <div style={{ display: "flex", gap: "12px" }}>
         <button
-          onClick={() =>
-            writeContract({
-              abi: ABI,
-              address: CONTRACT_ADDRESS,
-              functionName: "stake",
-              args: [BigInt(Number(amount) * 1e18)],
-            })
-          }
+          onClick={() => handleStaking("stake")}
           disabled={isPending}
           style={{
             flex: 1,
@@ -191,14 +210,7 @@ function StakingUI() {
         </button>
 
         <button
-          onClick={() =>
-            writeContract({
-              abi: ABI,
-              address: CONTRACT_ADDRESS,
-              functionName: "unstake",
-              args: [BigInt(Number(amount) * 1e18)],
-            })
-          }
+          onClick={() => handleStaking("unstake")}
           disabled={isPending}
           style={{
             flex: 1,
@@ -211,13 +223,7 @@ function StakingUI() {
         </button>
 
         <button
-          onClick={() =>
-            writeContract({
-              abi: ABI,
-              address: CONTRACT_ADDRESS,
-              functionName: "claimRewards",
-            })
-          }
+          onClick={() => handleClaimRewards()}
           disabled={isPending}
           style={{
             flex: 1,
