@@ -7,7 +7,7 @@ import {
   ConnectButton,
   getDefaultConfig,
 } from "@rainbow-me/rainbowkit";
-import { http } from "viem";
+import { http, parseUnits } from "viem";
 import { sepolia } from "viem/chains";
 import {
   useAccount,
@@ -25,6 +25,8 @@ import {
   okxWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 import { yieldABI } from "@/lib/abi/yieldABI";
+import { waitForTransactionReceipt } from "wagmi/actions";
+import { Amiko } from "next/font/google";
 
 const config = getDefaultConfig({
   appName: "AI smart yield",
@@ -110,13 +112,16 @@ function StakingUI() {
   });
 
   const handleStaking = async (functionName: string) => {
-    const amt = BigInt(Number(amount) * 1e18);
+    const amt = parseUnits(amount, 18);
     if (functionName !== "unstake") {
-      await writeContractAsync({
+      const approveHash = await writeContractAsync({
         abi: ABI,
         address: CONTRACT_ADDRESS,
         functionName: "approve",
         args: [CONTRACT_ADDRESS, amt],
+      });
+      await waitForTransactionReceipt(config, {
+        hash: approveHash,
       });
     }
     const hash = await writeContractAsync({
