@@ -27,6 +27,7 @@ import {
 import { yieldABI } from "@/lib/abi/yieldABI";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { Amiko } from "next/font/google";
+import { readContract } from "viem/actions";
 
 const config = getDefaultConfig({
   appName: "AI smart yield",
@@ -47,7 +48,7 @@ const config = getDefaultConfig({
 
 const queryClient = new QueryClient();
 
-const CONTRACT_ADDRESS: Address = "0xa05074b5C753fa8eF358640Fe30d6c37E1257D8A";
+const CONTRACT_ADDRESS: Address = "0x2adB3b4e8B944B9d02Fa7B96DEF2a19d2473A89d";
 
 const ABI = yieldABI;
 
@@ -124,6 +125,7 @@ function StakingUI() {
         hash: approveHash,
       });
     }
+
     const hash = await writeContractAsync({
       abi: ABI,
       address: CONTRACT_ADDRESS,
