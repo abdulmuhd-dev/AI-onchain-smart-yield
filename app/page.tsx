@@ -91,7 +91,7 @@ function StakingUI() {
   const { writeContractAsync, isPending } = useWriteContract();
   const [amount, setAmount] = useState("");
 
-  const { data: staked } = useReadContract({
+  const { data: staked, refetch: refetchStaked } = useReadContract({
     abi: ABI,
     address: CONTRACT_ADDRESS,
     functionName: "getStaked",
@@ -103,9 +103,12 @@ function StakingUI() {
     address: CONTRACT_ADDRESS,
     functionName: "calculateRewards",
     args: address ? [address] : undefined,
+    query: {
+      refetchInterval: 3000,
+    },
   });
 
-  const { data: tokenBalance } = useReadContract({
+  const { data: tokenBalance, refetch: refetchBalance } = useReadContract({
     abi: ABI,
     address: CONTRACT_ADDRESS,
     functionName: "balanceOf",
@@ -132,6 +135,9 @@ function StakingUI() {
       functionName,
       args: [amt],
     });
+    await waitForTransactionReceipt(config, { hash });
+    await refetchBalance();
+    await refetchStaked();
   };
 
   const handleClaimRewards = async () => {
