@@ -1,0 +1,12 @@
+flask
+flask_cors
+python_dotenv
+sentence_transformers
+langchain_text_splitters
+langchain_huggingface
+chromadb
+web3 
+langchain
+langchain_openai
+langchain_community
+langchain_core

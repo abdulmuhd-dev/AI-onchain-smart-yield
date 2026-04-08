@@ -43,3 +43,7 @@ next-env.d.ts
 # code sandbox 
 .codesandbox
 .devcontainer
+
+# api/
+api/venv/
+api/.venv
