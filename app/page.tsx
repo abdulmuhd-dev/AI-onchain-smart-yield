@@ -118,7 +118,7 @@ function StakingUI() {
   });
 
   const handleAction = async (action: "stake" | "unstake" | "claim") => {
-    if (!address || amount === "" || isNaN(amount)) return;
+    if ((!address || !amount || isNaN(amount)) && action !== "claim") return;
     setIsLoading(true);
 
     try {
