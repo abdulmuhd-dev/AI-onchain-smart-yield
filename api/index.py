@@ -26,7 +26,9 @@ prompt = ChatPromptTemplate([
 chatLLM = prompt | llm
 
 app = Flask(__name__)
-#CORS(app)
+CORS(app, resources={r"/*":{
+    "origins": "*"
+}})
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -34,8 +36,18 @@ def index():
     Purpose: Index route
     """
     if request.method == "POST":
-        data = request.get_json()
+        if not request.get_json(silent=True):
+            return jsonify({
+                "error": "json data not define"
+            }), 400
+           
+        data = request.get_json()   
         user_input = data.get("user_input")
+        if not user_input:
+            return jsonify({
+                "error":"user_input is required"
+            }), 400
+
         resp = chatLLM.invoke({
             "user_input": user_input
         })

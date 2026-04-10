@@ -165,16 +165,18 @@ function StakingUI() {
       const apiUrl = "https://7dcykx-4000.csb.app/";
       const options = {
         method: "POST",
-        header: {
+        headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           user_input: msg,
         }),
       };
-      const resp = await fetch(apiUrl);
+      const resp = await fetch(apiUrl, options);
+      if (!resp.ok) {
+        throw new Error(`Error accessing agent\n${resp.text}`);
+      }
       const AIResp = await resp.json();
-      window.alert(AIResp);
       setChatMessages((prev) => [...prev, AIResp]);
     } catch (e) {
       window.alert(e);
