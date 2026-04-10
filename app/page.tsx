@@ -156,23 +156,30 @@ function StakingUI() {
     }
   };
 
-  const sendChat = () => {
+  const sendChat = async () => {
     if (!chatInput.trim()) return;
     setChatMessages((prev) => [...prev, { role: "user", content: chatInput }]);
     const msg = chatInput;
     setChatInput("");
-
-    // Simulated AI reply (you can connect real agent later)
-    setTimeout(() => {
-      setChatMessages((prev) => [
-        ...prev,
-        {
-          role: "ai",
-          content:
-            "Based on current data, staking more looks good right now. Your rewards are accumulating nicely!",
+    try {
+      const apiUrl = "https://7dcykx-4000.csb.app/";
+      const options = {
+        method: "POST",
+        header: {
+          "Content-Type": "application/json",
         },
-      ]);
-    }, 900);
+        body: JSON.stringify({
+          user_input: msg,
+        }),
+      };
+      const resp = await fetch(apiUrl);
+      const AIResp = await resp.json();
+      window.alert(AIResp);
+      setChatMessages((prev) => [...prev, AIResp]);
+    } catch (e) {
+      window.alert(e);
+      console.log(e);
+    }
   };
 
   if (!address) {
